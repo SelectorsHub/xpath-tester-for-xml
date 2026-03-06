@@ -260,6 +260,17 @@ main { flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:0; overfl
 }
 [data-tip]:hover::after, [data-tip]:hover::before { opacity:1; }
 
+/* Copied! flash state — force tooltip visible in green */
+.tip-copied::after {
+  opacity:1 !important;
+  background:#005c43 !important;
+  border-color:#00b894;
+}
+.tip-copied::before {
+  opacity:1 !important;
+  border-top-color:#005c43 !important;
+}
+
 /* Right-edge tooltip: evaluate button is last in row, anchor to right */
 .xpath-gen-row > [data-tip]:last-child::after {
   left:auto; right:0; transform:none;
@@ -463,7 +474,8 @@ function autoGrowXpTa(ta) {
 function copyXPathInput() {
   const val = document.getElementById('xpath-input').value.trim();
   if (!val) return;
-  navigator.clipboard.writeText(val).then(() => showToast('✓ Copied!', 'copy'));
+  const btn = document.getElementById('xp-copy-btn');
+  navigator.clipboard.writeText(val).then(() => flashTip(btn, 'Copied!'));
 }
 
 // ═══════════════════════════════════════════════════
@@ -1023,7 +1035,19 @@ function svgFix(){return `<svg width="14" height="14" viewBox="0 0 24 24" fill="
 // ═══════════════════════════════════════════════════
 // COPY / EDIT / USE
 // ═══════════════════════════════════════════════════
-function copyXP(type){const txt=document.getElementById(type+'-xpath').textContent.trim();if(!txt){showToast('No XPath yet — click a node first');return;}navigator.clipboard.writeText(txt).then(()=>{showToast('✓ Copied!','copy');});}
+function copyXP(type){const txt=document.getElementById(type+'-xpath').textContent.trim();if(!txt){showToast('No XPath yet — click a node first');return;}const btn=event.currentTarget;navigator.clipboard.writeText(txt).then(()=>{flashTip(btn,'Copied!');});}
+
+// Flash a temporary tooltip label on any button
+function flashTip(btn, label) {
+  const prev = btn.getAttribute('data-tip');
+  btn.setAttribute('data-tip', label);
+  btn.classList.add('tip-copied');
+  clearTimeout(btn._tipTimer);
+  btn._tipTimer = setTimeout(() => {
+    btn.setAttribute('data-tip', prev);
+    btn.classList.remove('tip-copied');
+  }, 1800);
+}
 function editXP(type){const el=document.getElementById(type+'-xpath');if(!el.textContent.trim()){showToast('No XPath to edit');return;}if(el.contentEditable==='true'){el.contentEditable='false';showToast('✓ Saved');}else{['relative-xpath','absolute-xpath'].forEach(id=>{document.getElementById(id).contentEditable='false';});el.contentEditable='true';el.focus();const r=document.createRange();r.selectNodeContents(el);r.collapse(false);const s=window.getSelection();s.removeAllRanges();s.addRange(r);showToast('Editing — click ✏ again to save');}}
 function useXP(type){const txt=document.getElementById(type+'-xpath').textContent.trim();if(!txt){showToast('No XPath yet — click a node first');return;}document.getElementById('xpath-input').value=txt;evaluateXPath();}
 
