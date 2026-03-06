@@ -4,9 +4,36 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <style>
-  /* WordPress iframe full-width fix */
-  html, body { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; overflow-x: hidden !important; }
+  /* WordPress iframe full-width fix — aggressively override any theme constraints */
+  html {
+    width: 100% !important; max-width: 100% !important;
+    margin: 0 !important; padding: 0 !important;
+    overflow-x: hidden !important;
+  }
+  body {
+    width: 100% !important; max-width: 100% !important;
+    margin: 0 !important; padding: 0 !important;
+    overflow-x: hidden !important;
+  }
 </style>
+<script>
+  // Tell WordPress parent iframe to match our height, and force our own width
+  (function() {
+    function notifyParent() {
+      try {
+        var h = document.documentElement.scrollHeight || document.body.scrollHeight;
+        window.parent.postMessage({ type: 'iframeResize', height: h }, '*');
+      } catch(e) {}
+    }
+    if (window.self !== window.top) {
+      // We're inside an iframe — ensure we fill width
+      document.documentElement.style.width = '100%';
+      document.body && (document.body.style.width = '100%');
+      window.addEventListener('load', notifyParent);
+      window.addEventListener('resize', notifyParent);
+    }
+  })();
+</script>
 <title>XPath Editor – SelectorsHub</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -222,13 +249,21 @@ main { flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:0; overfl
 }
 [data-tip]:hover::after, [data-tip]:hover::before { opacity:1; }
 
+/* Right-edge tooltip: align to right so it doesn't clip */
+.xpath-gen-btns [data-tip]:last-child::after {
+  left:auto; right:0; transform:none;
+}
+.xpath-gen-btns [data-tip]:last-child::before {
+  left:auto; right:8px; transform:none;
+}
+
 /* ── Auto XPath ── */
 .auto-xpath-section { background:var(--brand-pale); border-bottom:1.5px solid var(--brand-muted); border-top:1.5px solid var(--border); padding:9px 14px 11px; flex-shrink:0; }
 .auto-xpath-lbl { font-size:10px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:var(--brand-dark); display:flex; align-items:center; gap:5px; margin-bottom:7px; }
 .auto-xpath-lbl small { font-weight:400; text-transform:none; letter-spacing:0; color:var(--text3); font-size:10px; }
 .xpath-gen-row { display:flex; align-items:center; gap:5px; margin-bottom:5px; }
 .xpath-gen-row:last-child { margin-bottom:0; }
-.xpath-gen-tag { font-size:9px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; color:var(--brand-dark); background:var(--brand-muted); padding:2px 6px; border-radius:3px; white-space:nowrap; width:56px; text-align:center; flex-shrink:0; }
+.xpath-gen-tag { font-size:9px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; color:var(--brand-dark); background:var(--brand-muted); padding:2px 6px; border-radius:3px; white-space:nowrap; width:82px; text-align:center; flex-shrink:0; }
 .xpath-val-box { flex:1; font-family:'JetBrains Mono',monospace; font-size:11px; padding:5px 8px; background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-sm); color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-height:30px; line-height:1.45; transition:border-color 0.15s; cursor:default; }
 .xpath-val-box:empty::before { content:'Click a node in Tree view…'; color:var(--text3); font-style:italic; }
 .xpath-val-box[contenteditable="true"] { border-color:var(--brand); background:var(--surface); color:var(--text); white-space:normal; overflow:auto; outline:none; }
@@ -366,7 +401,7 @@ main { flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:0; overfl
         <small>— click any node in Tree view to generate XPath</small>
       </div>
       <div class="xpath-gen-row">
-        <div class="xpath-gen-tag">Relative</div>
+        <div class="xpath-gen-tag">Relative XPath</div>
         <div class="xpath-val-box" id="relative-xpath"></div>
         <div class="xpath-gen-btns">
           <button class="btn btn-icon" data-tip="Copy XPath" onclick="copyXP('relative')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
@@ -375,7 +410,7 @@ main { flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:0; overfl
         </div>
       </div>
       <div class="xpath-gen-row">
-        <div class="xpath-gen-tag">Absolute</div>
+        <div class="xpath-gen-tag">Absolute XPath</div>
         <div class="xpath-val-box" id="absolute-xpath"></div>
         <div class="xpath-gen-btns">
           <button class="btn btn-icon" data-tip="Copy XPath" onclick="copyXP('absolute')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
@@ -1009,19 +1044,21 @@ document.getElementById('tree-source-ta').value='';
 </script>
 <!--
   ═══════════════════════════════════════════════════
-  WORDPRESS EMBED — use this iframe snippet:
+  WORDPRESS EMBED — paste this in an HTML block:
 
-  <iframe
-    src="https://YOUR-USERNAME.github.io/xpath-editor/"
-    width="100%"
-    height="750"
-    frameborder="0"
-    scrolling="no"
-    style="width:100%;max-width:100%;border:none;border-radius:8px;display:block;">
-  </iframe>
+  <div style="width:100%;max-width:100%;overflow:hidden;">
+    <iframe
+      src="https://YOUR-USERNAME.github.io/xpath-editor/"
+      width="100%"
+      height="750"
+      frameborder="0"
+      scrolling="no"
+      style="width:100% !important;max-width:100% !important;min-width:0;border:none;border-radius:8px;display:block;">
+    </iframe>
+  </div>
 
-  TIP: Set height="750" or higher so the full tool is visible.
-  The tool automatically fills 100% of the iframe width.
+  IMPORTANT: Wrap the iframe in a div so it escapes any
+  max-width container your theme applies to .entry-content.
   ═══════════════════════════════════════════════════
 -->
 </body>
