@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XPath Editor – SelectorsHub</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --brand: #ca7702; --brand-dark: #a85e00; --brand-light: #f5a623;
+  --brand-pale: #fff8ee; --brand-muted: #fde8c0;
+  --bg: #f9f6f2; --surface: #ffffff; --surface2: #faf7f4;
+  --border: #e8ddd0; --border2: #d4c4b0;
+  --text: #1a1208; --text2: #5a4a30; --text3: #9a8060;
+  --error: #c0392b; --error-bg: #fdf3f3; --error-border: #f5c6c6;
+  --error-dark: #7b241c;
+  --success: #00b894; --success-bg: #f0fff9; --success-border: #b2f0df; --success-dark: #005c43;
+  --warn-bg: #fffbf0; --warn-border: #f0d060; --warn-text: #7d5800;
+  --fix-bg: #f0f7ff; --fix-border: #90caf9; --fix-text: #1a4f8a;
+  --match-hl: #fff3cd; --match-hl-border: #ffc107;
+  --node-hover: #fff3e0; --node-selected: #fde8c0;
+  --radius-sm: 6px; --radius: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+/* ── Header ── */
+header { background:var(--surface); border-bottom:2px solid var(--brand); padding:0 20px; height:52px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; box-shadow:0 2px 8px rgba(202,119,2,0.08); }
+.logo { display:flex; align-items:center; gap:10px; font-size:16px; font-weight:700; color:var(--brand-dark); }
+.logo-icon { width:30px; height:30px; background:var(--brand); border-radius:7px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:800; font-family:'JetBrains Mono',monospace; }
+.header-right { display:flex; align-items:center; gap:10px; }
+.engine-badge { font-size:10px; font-weight:700; letter-spacing:0.4px; padding:3px 9px; border-radius:20px; background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
+.header-badge { font-size:11px; font-weight:500; background:var(--brand-pale); color:var(--brand-dark); border:1px solid var(--brand-muted); padding:3px 10px; border-radius:20px; }
+
+/* ── Layout ── */
+main { flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:0; overflow:hidden; }
+.panel { display:flex; flex-direction:column; border-right:1.5px solid var(--border); overflow:hidden; }
+.panel:last-child { border-right:none; }
+.panel-header { background:var(--surface); border-bottom:1.5px solid var(--border); padding:8px 14px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.panel-title { font-size:11px; font-weight:600; letter-spacing:0.8px; text-transform:uppercase; color:var(--text2); display:flex; align-items:center; gap:6px; }
+.panel-title svg { color:var(--brand); }
+.panel-actions { display:flex; gap:5px; align-items:center; }
+
+/* ── Buttons ── */
+.btn { display:inline-flex; align-items:center; gap:4px; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; padding:5px 11px; border-radius:var(--radius-sm); border:1.5px solid transparent; cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+.btn-primary { background:var(--brand); color:#fff; border-color:var(--brand); }
+.btn-primary:hover { background:var(--brand-dark); }
+.btn-ghost { background:transparent; color:var(--text2); border-color:var(--border2); }
+.btn-ghost:hover { background:var(--brand-pale); border-color:var(--brand); color:var(--brand-dark); }
+.btn-icon { padding:5px 7px; border-color:var(--border); color:var(--text3); background:var(--surface); }
+.btn-icon:hover { background:var(--brand-pale); border-color:var(--brand); color:var(--brand); }
+.view-toggle { display:flex; border:1.5px solid var(--border2); border-radius:var(--radius-sm); overflow:hidden; }
+.view-btn { font-size:11px; font-weight:500; padding:4px 10px; background:transparent; border:none; cursor:pointer; color:var(--text3); transition:all 0.15s; font-family:'DM Sans',sans-serif; }
+.view-btn.active { background:var(--brand); color:#fff; }
+
+/* ── XML Body ── */
+.xml-body { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+#xml-raw { flex:1; font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.65; border:none; outline:none; resize:none; padding:14px; background:var(--surface2); color:var(--text); transition:background 0.2s; }
+#xml-raw::placeholder { color:var(--text3); font-style:italic; }
+#xml-raw:focus { background:var(--surface); }
+#tree-container { flex:1; display:none; flex-direction:column; overflow:hidden; }
+#tree-container.active { display:flex; }
+#tree-view { flex:1; overflow:auto; padding:10px 14px; background:var(--surface); }
+.tree-source-bar { border-top:1.5px solid var(--border); background:var(--surface2); flex-shrink:0; }
+.tree-source-bar-hdr { display:flex; align-items:center; justify-content:space-between; padding:5px 12px; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
+.tree-source-bar-hdr:hover { background:var(--brand-pale); }
+.tree-source-label { font-size:10px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; color:var(--text3); display:flex; align-items:center; gap:5px; }
+.tree-source-label svg { color:var(--brand); }
+#tree-source-ta { display:none; width:100%; height:88px; font-family:'JetBrains Mono',monospace; font-size:11.5px; line-height:1.55; padding:9px 12px; border:none; outline:none; resize:none; background:var(--surface2); color:var(--text); }
+#tree-source-ta.open { display:block; }
+
+/* Tree nodes */
+.tree-node { font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.7; user-select:none; }
+.tree-node-line { display:flex; align-items:flex-start; border-radius:4px; padding:1px 4px; cursor:pointer; transition:background 0.1s; }
+.tree-node-line:hover { background:var(--node-hover); }
+.tree-node-line.selected { background:var(--node-selected); outline:1.5px solid var(--brand-muted); }
+.tree-indent { display:inline-block; width:16px; flex-shrink:0; }
+.tree-toggle { display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; margin-top:3px; flex-shrink:0; border-radius:3px; font-size:9px; color:var(--brand); border:1px solid var(--brand-muted); background:var(--brand-pale); margin-right:4px; transition:transform 0.15s; }
+.tree-toggle.open { transform:rotate(90deg); }
+.tree-toggle.leaf { background:transparent; border-color:transparent; color:transparent; cursor:default; }
+.tn { color:#8B3A0F; font-weight:600; } .tb { color:var(--brand-dark); font-weight:700; }
+.an { color:#1565C0; } .av { color:#2E7D32; } .tx { color:#555; }
+.match-node > .tree-node-line { background:var(--match-hl) !important; outline:1.5px solid var(--match-hl-border) !important; }
+.children { display:block; } .children.collapsed { display:none; }
+.xml-status { padding:5px 14px; background:var(--surface); border-top:1px solid var(--border); font-size:11px; color:var(--text3); display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.status-dot { width:6px; height:6px; border-radius:50%; background:var(--text3); flex-shrink:0; }
+.status-dot.ok { background:var(--success); } .status-dot.err { background:var(--error); }
+
+/* ══════════════════════════════════════
+   RIGHT PANEL — XPath
+══════════════════════════════════════ */
+
+/* XPath input section */
+.xpath-input-section { background:var(--surface); border-bottom:1.5px solid var(--border); flex-shrink:0; position:relative; }
+.xpath-input-row { display:flex; gap:7px; align-items:center; padding:10px 14px 10px; }
+#xpath-input {
+  flex:1; font-family:'JetBrains Mono',monospace; font-size:13px;
+  padding:8px 11px; border:1.5px solid var(--border2);
+  border-radius:var(--radius-sm); background:var(--surface2); color:var(--text);
+  outline:none; transition:border-color 0.15s, background 0.15s;
+}
+#xpath-input:focus       { border-color:var(--brand); background:var(--surface); }
+#xpath-input.xpath-ok   { border-color:var(--success) !important; background:var(--success-bg); }
+#xpath-input.xpath-err  { border-color:var(--error)   !important; background:var(--error-bg); }
+
+/* ── Autocomplete dropdown ── */
+.ac-dropdown {
+  display:none; position:absolute; left:14px; right:14px;
+  background:var(--surface); border:1.5px solid var(--brand-muted);
+  border-radius:var(--radius-sm); box-shadow:0 8px 24px rgba(202,119,2,0.15);
+  z-index:999; max-height:230px; overflow-y:auto;
+  top: calc(100% - 2px);
+}
+.ac-dropdown.open { display:block; }
+.ac-group-label { font-size:9px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:var(--text3); padding:6px 12px 3px; border-top:1px solid var(--border); }
+.ac-group-label:first-child { border-top:none; }
+.ac-item {
+  display:flex; align-items:center; gap:8px; padding:6px 12px;
+  cursor:pointer; transition:background 0.1s;
+  font-family:'JetBrains Mono',monospace; font-size:12px;
+}
+.ac-item:hover, .ac-item.active { background:var(--brand-pale); }
+.ac-item-name { color:var(--brand-dark); font-weight:600; flex-shrink:0; }
+.ac-item-sig  { color:var(--text3); font-size:11px; }
+.ac-item-tag  { font-size:9px; font-weight:700; padding:1px 5px; border-radius:3px; flex-shrink:0; margin-left:auto; }
+.ac-tag-v2  { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
+.ac-tag-v1  { background:var(--brand-pale); color:var(--brand-dark); border:1px solid var(--brand-muted); }
+.ac-tag-axis { background:#f3e5f5; color:#7b1fa2; border:1px solid #ce93d8; }
+
+/* ── Feedback (match count / error) ── */
+.xpath-feedback-wrap {
+  /* White bottom margin to visually separate from auto-xpath section below */
+  padding: 0 14px 10px;
+  display:none;
+}
+.xpath-feedback-wrap.show { display:block; }
+
+.feedback-card {
+  border-radius: var(--radius-sm);
+  border: 1.5px solid transparent;
+  overflow: hidden;
+}
+
+/* Match count row */
+.feedback-match {
+  display:flex; align-items:center; gap:8px;
+  padding:9px 12px;
+  font-size:12.5px; font-weight:500;
+}
+.feedback-match.success { background:var(--success-bg); color:var(--success-dark); border:1.5px solid var(--success-border); }
+.feedback-match.warn    { background:var(--warn-bg);    color:var(--warn-text);    border:1.5px solid var(--warn-border); }
+.match-badge { display:inline-flex; align-items:center; justify-content:center; background:var(--brand); color:#fff; font-size:11px; font-weight:700; padding:1px 9px; border-radius:20px; font-family:'JetBrains Mono',monospace; flex-shrink:0; }
+
+/* Error card */
+.feedback-error { background:var(--error-bg); border:1.5px solid var(--error-border); border-radius:var(--radius-sm); overflow:hidden; }
+.feedback-error-header { display:flex; align-items:flex-start; gap:9px; padding:9px 12px 8px; border-bottom:1px solid var(--error-border); }
+.feedback-error-icon { flex-shrink:0; margin-top:1px; color:var(--error); }
+.feedback-error-title { font-size:12.5px; font-weight:700; color:var(--error-dark); line-height:1.4; }
+.feedback-error-msg   { font-size:11.5px; color:var(--error); font-family:'JetBrains Mono',monospace; margin-top:2px; word-break:break-word; line-height:1.5; }
+.feedback-fix { display:flex; align-items:flex-start; gap:8px; padding:8px 12px; background:var(--fix-bg); border-top:1px solid var(--fix-border); }
+.feedback-fix-icon { flex-shrink:0; color:var(--fix-text); margin-top:1px; }
+.feedback-fix-label { font-size:11px; font-weight:700; color:var(--fix-text); text-transform:uppercase; letter-spacing:0.4px; }
+.feedback-fix-text  { font-size:12px; color:var(--fix-text); line-height:1.5; margin-top:2px; }
+.feedback-fix-code  { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; background:#dbeafe; padding:1px 6px; border-radius:3px; margin:2px 2px 0 0; }
+
+/* ── Auto XPath ── */
+.auto-xpath-section { background:var(--brand-pale); border-bottom:1.5px solid var(--brand-muted); border-top:1.5px solid var(--border); padding:9px 14px 11px; flex-shrink:0; }
+.auto-xpath-lbl { font-size:10px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:var(--brand-dark); display:flex; align-items:center; gap:5px; margin-bottom:7px; }
+.auto-xpath-lbl small { font-weight:400; text-transform:none; letter-spacing:0; color:var(--text3); font-size:10px; }
+.xpath-gen-row { display:flex; align-items:center; gap:5px; margin-bottom:5px; }
+.xpath-gen-row:last-child { margin-bottom:0; }
+.xpath-gen-tag { font-size:9px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; color:var(--brand-dark); background:var(--brand-muted); padding:2px 6px; border-radius:3px; white-space:nowrap; width:56px; text-align:center; flex-shrink:0; }
+.xpath-val-box { flex:1; font-family:'JetBrains Mono',monospace; font-size:11px; padding:5px 8px; background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-sm); color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-height:30px; line-height:1.45; transition:border-color 0.15s; cursor:default; }
+.xpath-val-box:empty::before { content:'Click a node in Tree view…'; color:var(--text3); font-style:italic; }
+.xpath-val-box[contenteditable="true"] { border-color:var(--brand); background:var(--surface); color:var(--text); white-space:normal; overflow:auto; outline:none; }
+.xpath-gen-btns { display:flex; gap:3px; flex-shrink:0; }
+
+/* Results */
+.result-section { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.result-list { flex:1; overflow:auto; padding:10px 14px; }
+.result-item { margin-bottom:7px; border:1.5px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; background:var(--surface); }
+.result-item-hdr { padding:5px 10px; background:var(--brand-pale); border-bottom:1px solid var(--brand-muted); font-size:11px; font-weight:600; color:var(--brand-dark); }
+.result-item-body { padding:7px 10px; font-family:'JetBrains Mono',monospace; font-size:11.5px; line-height:1.6; color:var(--text2); word-break:break-all; white-space:pre-wrap; }
+.engine-note { font-size:10px; color:var(--text3); padding:4px 10px 6px; display:flex; align-items:center; gap:5px; }
+.engine-note code { font-family:'JetBrains Mono',monospace; background:var(--surface2); padding:1px 5px; border-radius:3px; }
+.placeholder-msg { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:10px; color:var(--text3); text-align:center; padding:20px; }
+.placeholder-msg p { font-size:12.5px; line-height:1.7; }
+
+.toast { position:fixed; bottom:16px; right:16px; background:#1a1208; color:#fff; padding:9px 15px; border-radius:var(--radius-sm); font-size:12.5px; font-weight:500; opacity:0; transform:translateY(6px); transition:all 0.2s; pointer-events:none; z-index:9999; }
+.toast.show { opacity:1; transform:translateY(0); }
+
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--brand-light); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">X</div>
+    XPath Editor
+  </div>
+  <div class="header-right">
+    <span class="engine-badge">XPath 2.0 ✓</span>
+    <span class="header-badge">by SelectorsHub</span>
+  </div>
+</header>
+
+<main>
+  <!-- ══ LEFT ══ -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        XML Input
+      </div>
+      <div class="panel-actions">
+        <div class="view-toggle">
+          <button class="view-btn active" id="btn-raw"  onclick="switchView('raw')">Raw</button>
+          <button class="view-btn"        id="btn-tree" onclick="switchView('tree')">Tree</button>
+        </div>
+        <button class="btn btn-ghost" onclick="doFormat()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10H7M21 6H3M21 14H3M21 18H7"/></svg>
+          Format
+        </button>
+        <button class="btn btn-ghost" onclick="clearXML()">Clear</button>
+      </div>
+    </div>
+    <div class="xml-body">
+      <textarea id="xml-raw" placeholder="Paste your XML here…&#10;&#10;&lt;bookstore&gt;&#10;  &lt;book id=&quot;b1&quot;&gt;&#10;    &lt;title&gt;The Great Gatsby&lt;/title&gt;&#10;  &lt;/book&gt;&#10;&lt;/bookstore&gt;" oninput="onXMLChange(this.value)"></textarea>
+      <div id="tree-container">
+        <div id="tree-view"></div>
+        <div class="tree-source-bar">
+          <div class="tree-source-bar-hdr" onclick="toggleSrcBar()">
+            <div class="tree-source-label">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Paste / Edit XML Source
+            </div>
+            <span id="src-arrow" style="font-size:10px;color:var(--text3)">▲</span>
+          </div>
+          <textarea id="tree-source-ta" placeholder="Paste or edit XML here… (Ctrl+Enter to apply)" oninput="syncSrcBar(this.value)" onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){applySrcBar();event.preventDefault();}"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="xml-status">
+      <div class="status-dot" id="xml-status-dot"></div>
+      <span id="xml-status-text">Paste XML to begin</span>
+    </div>
+  </div>
+
+  <!-- ══ RIGHT ══ -->
+  <div class="panel" style="display:flex;flex-direction:column;overflow:hidden;">
+    <div class="panel-header">
+      <div class="panel-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        XPath Evaluator
+      </div>
+    </div>
+
+    <!-- Input + autocomplete + feedback -->
+    <div class="xpath-input-section" id="xpath-input-section">
+      <div class="xpath-input-row">
+        <input type="text" id="xpath-input" autocomplete="off" spellcheck="false"
+          placeholder="Type XPath… e.g. //book[ends-with(title,'9')]"
+          oninput="onXPathInput(this.value)"
+          onkeydown="handleXPathKey(event)"
+          onfocus="showAcIfNeeded()"
+          onblur="scheduleHideAc()">
+        <button class="btn btn-primary" onclick="evaluateXPath()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Evaluate
+        </button>
+        <button class="btn btn-ghost" onclick="clearXPathFull()">Clear</button>
+      </div>
+
+      <!-- Autocomplete dropdown -->
+      <div class="ac-dropdown" id="ac-dropdown"></div>
+
+      <!-- Feedback: margin 14px left/right, 10px bottom white gap -->
+      <div class="xpath-feedback-wrap" id="feedback-wrap">
+        <div id="feedback-inner"></div>
+      </div>
+    </div>
+
+    <!-- Auto-generated XPath (separated by border from feedback) -->
+    <div class="auto-xpath-section">
+      <div class="auto-xpath-lbl">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Auto-Generated XPath
+        <small>— click any node in Tree view</small>
+      </div>
+      <div class="xpath-gen-row">
+        <div class="xpath-gen-tag">Relative</div>
+        <div class="xpath-val-box" id="relative-xpath"></div>
+        <div class="xpath-gen-btns">
+          <button class="btn btn-icon" title="Copy" onclick="copyXP('relative')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+          <button class="btn btn-icon" title="Edit" onclick="editXP('relative')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button class="btn btn-icon" title="Use" onclick="useXP('relative')" style="color:var(--brand)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+      <div class="xpath-gen-row">
+        <div class="xpath-gen-tag">Absolute</div>
+        <div class="xpath-val-box" id="absolute-xpath"></div>
+        <div class="xpath-gen-btns">
+          <button class="btn btn-icon" title="Copy" onclick="copyXP('absolute')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+          <button class="btn btn-icon" title="Edit" onclick="editXP('absolute')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button class="btn btn-icon" title="Use" onclick="useXP('absolute')" style="color:var(--brand)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result nodes -->
+    <div class="result-section">
+      <div class="result-list" id="result-list">
+        <div class="placeholder-msg">
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#ca7702" stroke-width="1.2" opacity="0.35"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <p>Enter an XPath and press <strong>Evaluate</strong>.<br>Supports XPath 1.0 &amp; 2.0 functions:<br>
+          <code style="font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface2);padding:2px 6px;border-radius:3px;margin-top:4px;display:inline-block">ends-with · matches · avg · lower-case · upper-case</code></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// AUTOCOMPLETE DATA
+// ═══════════════════════════════════════════════════
+const AC_ITEMS = [
+  // ── Node functions v1
+  { g:'Node Functions', name:'text()',          ins:'text()',                    sig:'Select text nodes',                        v:'v1' },
+  { g:'Node Functions', name:'node()',          ins:'node()',                    sig:'Select any node',                          v:'v1' },
+  { g:'Node Functions', name:'comment()',       ins:'comment()',                 sig:'Select comment nodes',                     v:'v1' },
+  { g:'Node Functions', name:'processing-instruction()',ins:'processing-instruction()',sig:'Select PI nodes',                   v:'v1' },
+  { g:'Node Functions', name:'name()',          ins:'name()',                    sig:'Name of current node',                     v:'v1' },
+  { g:'Node Functions', name:'local-name()',    ins:'local-name()',              sig:'Local part of name',                       v:'v1' },
+  { g:'Node Functions', name:'count()',         ins:'count(${1:nodeset})',       sig:'count(nodeset) → number',                  v:'v1' },
+  { g:'Node Functions', name:'last()',          ins:'last()',                    sig:'Index of last node in context',            v:'v1' },
+  { g:'Node Functions', name:'position()',      ins:'position()',                sig:'Position of current node',                 v:'v1' },
+  // ── String functions v1
+  { g:'String Functions', name:'contains()',    ins:'contains(${1:str},${2:sub})',   sig:'contains(str, sub) → boolean',        v:'v1' },
+  { g:'String Functions', name:'starts-with()',ins:'starts-with(${1:str},${2:prefix})',sig:'starts-with(str, prefix) → boolean',v:'v1' },
+  { g:'String Functions', name:'string-length()',ins:'string-length(${1:str})', sig:'string-length(str) → number',              v:'v1' },
+  { g:'String Functions', name:'substring()',  ins:'substring(${1:str},${2:start},${3:len})',sig:'substring(str, start, len)',   v:'v1' },
+  { g:'String Functions', name:'substring-before()',ins:'substring-before(${1:str},${2:delim})',sig:'substring-before(str,delim)',v:'v1'},
+  { g:'String Functions', name:'substring-after()',ins:'substring-after(${1:str},${2:delim})',sig:'substring-after(str,delim)', v:'v1' },
+  { g:'String Functions', name:'normalize-space()',ins:'normalize-space(${1:str})',sig:'Trim and collapse whitespace',           v:'v1' },
+  { g:'String Functions', name:'translate()',  ins:'translate(${1:str},${2:from},${3:to})',sig:'Character replacement',         v:'v1' },
+  { g:'String Functions', name:'concat()',     ins:'concat(${1:s1},${2:s2})',  sig:'Concatenate strings',                       v:'v1' },
+  { g:'String Functions', name:'string()',     ins:'string(${1:.})',            sig:'Convert to string',                        v:'v1' },
+  // ── XPath 2.0 string functions
+  { g:'XPath 2.0 — String', name:'ends-with()',   ins:'ends-with(${1:str},${2:suffix})',sig:'ends-with(str, suffix) → boolean', v:'v2' },
+  { g:'XPath 2.0 — String', name:'matches()',     ins:'matches(${1:str},${2:"pattern"})',sig:'matches(str, regex) → boolean',   v:'v2' },
+  { g:'XPath 2.0 — String', name:'lower-case()',  ins:'lower-case(${1:str})',   sig:'lower-case(str) → string',                v:'v2' },
+  { g:'XPath 2.0 — String', name:'upper-case()',  ins:'upper-case(${1:str})',   sig:'upper-case(str) → string',                v:'v2' },
+  { g:'XPath 2.0 — String', name:'tokenize()',    ins:'tokenize(${1:str},${2:"pat"})',sig:'tokenize(str, pattern) → sequence', v:'v2' },
+  { g:'XPath 2.0 — String', name:'string-join()', ins:'string-join(${1:seq},${2:","})',sig:'Join sequence with separator',     v:'v2' },
+  // ── Number functions
+  { g:'Number Functions', name:'number()',     ins:'number(${1:.})',             sig:'Convert to number',                        v:'v1' },
+  { g:'Number Functions', name:'sum()',        ins:'sum(${1:nodeset})',          sig:'Sum of node values',                       v:'v1' },
+  { g:'Number Functions', name:'floor()',      ins:'floor(${1:num})',            sig:'Round down',                               v:'v1' },
+  { g:'Number Functions', name:'ceiling()',    ins:'ceiling(${1:num})',          sig:'Round up',                                 v:'v1' },
+  { g:'Number Functions', name:'round()',      ins:'round(${1:num})',            sig:'Round to nearest',                         v:'v1' },
+  { g:'Number Functions', name:'avg()',        ins:'avg(${1:nodeset})',          sig:'Average of nodeset (XPath 2.0)',           v:'v2' },
+  // ── Boolean
+  { g:'Boolean Functions', name:'not()',       ins:'not(${1:expr})',             sig:'Logical NOT',                              v:'v1' },
+  { g:'Boolean Functions', name:'true()',      ins:'true()',                     sig:'Boolean true',                             v:'v1' },
+  { g:'Boolean Functions', name:'false()',     ins:'false()',                    sig:'Boolean false',                            v:'v1' },
+  { g:'Boolean Functions', name:'boolean()',   ins:'boolean(${1:expr})',         sig:'Convert to boolean',                       v:'v1' },
+  // ── Axes
+  { g:'Axes', name:'ancestor::',              ins:'ancestor::${1:*}',           sig:'All ancestors',                            v:'axis' },
+  { g:'Axes', name:'ancestor-or-self::',      ins:'ancestor-or-self::${1:*}',   sig:'Ancestors including self',                v:'axis' },
+  { g:'Axes', name:'child::',                 ins:'child::${1:*}',              sig:'Direct children',                          v:'axis' },
+  { g:'Axes', name:'descendant::',            ins:'descendant::${1:*}',         sig:'All descendants',                          v:'axis' },
+  { g:'Axes', name:'descendant-or-self::',    ins:'descendant-or-self::${1:*}', sig:'Descendants including self',               v:'axis' },
+  { g:'Axes', name:'following::',             ins:'following::${1:*}',          sig:'Everything after this node',               v:'axis' },
+  { g:'Axes', name:'following-sibling::',     ins:'following-sibling::${1:*}',  sig:'Siblings after this node',                 v:'axis' },
+  { g:'Axes', name:'parent::',                ins:'parent::${1:*}',             sig:'Parent node',                              v:'axis' },
+  { g:'Axes', name:'preceding::',             ins:'preceding::${1:*}',          sig:'Everything before this node',              v:'axis' },
+  { g:'Axes', name:'preceding-sibling::',     ins:'preceding-sibling::${1:*}',  sig:'Siblings before this node',               v:'axis' },
+  { g:'Axes', name:'self::',                  ins:'self::${1:*}',               sig:'Current node',                             v:'axis' },
+];
+
+// ── Autocomplete state ──────────────────
+let acItems = [], acIdx = -1, acHideTimer = null, acTriggerWord = '';
+
+function getTokenBeforeCursor() {
+  const inp = document.getElementById('xpath-input');
+  const val = inp.value, pos = inp.selectionStart;
+  const before = val.slice(0, pos);
+  // Match last word-like token (letters, hyphens, colons, digits)
+  const m = before.match(/[\w\-:]+$/);
+  return m ? m[0] : '';
+}
+
+function onXPathInput(val) {
+  clearEvalResult();
+  const token = getTokenBeforeCursor();
+  if (token.length >= 1) {
+    const lower = token.toLowerCase();
+    acItems = AC_ITEMS.filter(it =>
+      it.name.toLowerCase().startsWith(lower) ||
+      it.name.toLowerCase().includes(lower)
+    );
+    acItems.sort((a,b) => {
+      const ai = a.name.toLowerCase().startsWith(lower) ? 0 : 1;
+      const bi = b.name.toLowerCase().startsWith(lower) ? 0 : 1;
+      return ai - bi;
+    });
+    acIdx = -1;
+    renderAc();
+  } else {
+    hideAc();
+  }
+}
+
+function renderAc() {
+  const dd = document.getElementById('ac-dropdown');
+  if (!acItems.length) { hideAc(); return; }
+
+  let html = '', lastGroup = '';
+  acItems.slice(0, 20).forEach((it, i) => {
+    if (it.g !== lastGroup) {
+      html += `<div class="ac-group-label">${it.g}</div>`;
+      lastGroup = it.g;
+    }
+    const tagClass = it.v === 'v2' ? 'ac-tag-v2' : it.v === 'axis' ? 'ac-tag-axis' : 'ac-tag-v1';
+    const tagLabel = it.v === 'v2' ? 'XP2' : it.v === 'axis' ? 'AXIS' : 'XP1';
+    html += `<div class="ac-item${i===acIdx?' active':''}" data-idx="${i}" onmousedown="applyAc(${i})">
+      <span class="ac-item-name">${esc(it.name)}</span>
+      <span class="ac-item-sig">${esc(it.sig)}</span>
+      <span class="ac-item-tag ${tagClass}">${tagLabel}</span>
+    </div>`;
+  });
+  dd.innerHTML = html;
+  dd.classList.add('open');
+}
+
+function applyAc(idx) {
+  const item = acItems[idx];
+  if (!item) return;
+  const inp = document.getElementById('xpath-input');
+  const val = inp.value, pos = inp.selectionStart;
+  const before = val.slice(0, pos);
+  const after  = val.slice(pos);
+  const m = before.match(/[\w\-:]+$/);
+  const start = m ? before.length - m[0].length : before.length;
+  // Insert the function name (strip snippet placeholders ${N:x} → x)
+  const plain = item.ins.replace(/\$\{\d+:([^}]*)\}/g, '$1').replace(/\$\d+/g,'');
+  const newVal = val.slice(0, start) + plain + after;
+  inp.value = newVal;
+  // Place cursor inside first parens if function
+  const parenIdx = plain.indexOf('(');
+  const cursor = start + (parenIdx >= 0 ? parenIdx + 1 : plain.length);
+  inp.setSelectionRange(cursor, cursor);
+  hideAc();
+  inp.focus();
+}
+
+function handleXPathKey(e) {
+  const dd = document.getElementById('ac-dropdown');
+  const open = dd.classList.contains('open');
+  if (e.key === 'ArrowDown') {
+    if (!open) { showAcIfNeeded(); return; }
+    acIdx = Math.min(acIdx + 1, Math.min(acItems.length, 20) - 1);
+    renderAc(); scrollAcActive(); e.preventDefault();
+  } else if (e.key === 'ArrowUp') {
+    acIdx = Math.max(acIdx - 1, -1);
+    renderAc(); scrollAcActive(); e.preventDefault();
+  } else if (e.key === 'Tab' || e.key === 'Enter') {
+    if (open && acIdx >= 0) { applyAc(acIdx); e.preventDefault(); return; }
+    if (e.key === 'Enter') evaluateXPath();
+    hideAc();
+  } else if (e.key === 'Escape') {
+    hideAc();
+  }
+}
+
+function scrollAcActive() {
+  const dd = document.getElementById('ac-dropdown');
+  const active = dd.querySelector('.ac-item.active');
+  if (active) active.scrollIntoView({ block:'nearest' });
+}
+
+function showAcIfNeeded() {
+  const token = getTokenBeforeCursor();
+  if (token.length >= 1) onXPathInput(document.getElementById('xpath-input').value);
+}
+
+function scheduleHideAc() {
+  acHideTimer = setTimeout(hideAc, 150);
+}
+function hideAc() {
+  clearTimeout(acHideTimer);
+  document.getElementById('ac-dropdown').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════════
+// SMART ERROR DIAGNOSIS
+// ═══════════════════════════════════════════════════
+function diagnoseXPathError(xp, rawErr) {
+  const x = xp.trim();
+  const e = (rawErr||'').toLowerCase();
+
+  // 1. Unmatched brackets/parens/quotes
+  let sq=0,dq=0,op=0,ob=0;
+  for (const ch of x) {
+    if (ch==="'" && dq===0) sq = 1-sq;
+    else if (ch==='"' && sq===0) dq = 1-dq;
+    else if (sq===0&&dq===0) {
+      if(ch==='(') op++; else if(ch===')') op--;
+      if(ch==='[') ob++; else if(ch===']') ob--;
+    }
+  }
+  if (sq) return { title:'Unclosed single quote', detail:'String literal opened with \' was never closed.', fixes:['Add closing quote: …\'value\'', 'Use double quotes instead: "value"'] };
+  if (dq) return { title:'Unclosed double quote', detail:'String literal opened with " was never closed.', fixes:['Add closing double quote: …"value"', 'Use single quotes instead: \'value\''] };
+  if (op>0) return { title:`Unmatched parenthesis (${op} unclosed)`, detail:'A function call or grouping has more ( than ).', fixes:['Add closing ) at the end', 'Check function arguments for extra ('] };
+  if (op<0) return { title:'Extra closing parenthesis', detail:'More ) found than (', fixes:['Remove one ) from the expression', 'Check function calls are balanced'] };
+  if (ob>0) return { title:`Unclosed predicate bracket [`, detail:'A predicate [ was opened but never closed with ].', fixes:['Add ] to close the predicate: //book[@id="1"]', 'Check nested predicates'] };
+  if (ob<0) return { title:'Extra ] without matching [', detail:'A closing ] was found without a matching [.', fixes:['Remove the extra ] from the expression'] };
+
+  // 2. Invalid axis
+  const axisMatch = x.match(/([a-z-]+)::[^a-z*]/i);
+  if (axisMatch) {
+    const validAxes = ['ancestor','ancestor-or-self','attribute','child','descendant','descendant-or-self','following','following-sibling','namespace','parent','preceding','preceding-sibling','self'];
+    const used = axisMatch[1].toLowerCase();
+    if (!validAxes.includes(used)) {
+      const closest = validAxes.filter(a=>a.startsWith(used.slice(0,3)));
+      return { title:`Unknown axis: "${used}"`, detail:`"${used}::" is not a valid XPath axis.`, fixes:['Valid axes: child, parent, ancestor, descendant, following-sibling, preceding-sibling, self', closest.length ? `Did you mean: ${closest[0]}::` : 'Check the axis spelling'] };
+    }
+  }
+
+  // 3. XPath 2.0 functions used without polyfill transpile (shouldn't happen now)
+  const xp2Fns = ['ends-with','lower-case','upper-case','matches','string-join','tokenize','distinct-values'];
+  for (const fn of xp2Fns) {
+    if (x.includes(fn+'(')) {
+      return { title:`XPath 2.0 function: ${fn}()`, detail:`${fn}() is an XPath 2.0 function and was not fully transpiled.`, fixes:[`Wrap text() inside: ${fn}(normalize-space(.), "value")`, 'Try using the native equivalent if available'] };
+    }
+  }
+
+  // 4. Attribute syntax
+  if (x.match(/@[a-z-]+\s*=\s*[a-z]/i) && !x.match(/@[a-z-]+\s*=\s*['"\d]/i)) {
+    return { title:'Attribute value must be quoted', detail:'Attribute comparison values need to be in quotes.', fixes:['Use: @attr="value"  or  @attr=\'value\'', 'Numbers do not need quotes: @count=3'] };
+  }
+
+  // 5. Double slash at wrong place
+  if (x.match(/\/\/\//)) {
+    return { title:'Triple slash ///', detail:'Found "///" which is invalid. "//" means "any descendant".', fixes:['Replace "///" with "//"', 'Example: //book//title'] };
+  }
+
+  // 6. Space in predicate without operator
+  if (x.match(/\[\s*[a-z-]+\s+[a-z-]+\s*[=<>]/i)) {
+    return { title:'Invalid predicate syntax', detail:'Unexpected space between tokens in predicate — missing @ for attribute?', fixes:['For attributes use @: [@category="fiction"]', 'For child elements: [price > 10]', 'For functions: [contains(title, "Gatsby")]'] };
+  }
+
+  // 7. Empty predicate
+  if (x.match(/\[\s*\]/)) {
+    return { title:'Empty predicate []', detail:'Predicates must contain a condition, not be empty.', fixes:['Add a condition: [1], [@id="x"], [contains(text(),"y")]', 'Remove the empty [] if not needed'] };
+  }
+
+  // 8. Common mistake: using = instead of == (not really XPath but confusing)
+  if (x.match(/==/) ) {
+    return { title:'Invalid operator ==', detail:'XPath uses single = for equality comparison, not ==', fixes:['Replace == with =', 'Example: //book[@id="b1"]'] };
+  }
+
+  // 9. Missing / at start
+  if (x.length > 0 && !x.startsWith('/') && !x.startsWith('.') && !x.startsWith('*') && x.match(/^[a-z]/i) && !x.includes('(')) {
+    return { title:'Expression may be missing a leading /', detail:`"${x}" looks like a node name without a path operator.`, fixes:['For absolute path: /' + x, 'For anywhere in document: //' + x, 'Example: //book or /bookstore/book'] };
+  }
+
+  // 10. Generic fallback with cleaned error
+  const cleaned = (rawErr||'')
+    .replace(/^(Error:\s*)+/gi,'')
+    .replace(/The string .* is not a valid XPath expression\.\s*/i,'')
+    .replace(/\s+/g,' ').trim().slice(0,180);
+  return { title:'XPath syntax error', detail: cleaned || 'The expression could not be parsed.', fixes:['Check for unclosed quotes, brackets, or parentheses', 'Verify function names are spelled correctly', 'Use the autocomplete (↑↓) to find valid functions'] };
+}
+
+// ═══════════════════════════════════════════════════
+// XPath 2.0 Polyfill
+// ═══════════════════════════════════════════════════
+const XP2 = {
+  parseFnArgs(expr, openIdx) {
+    let depth=0,i=openIdx+1,inStr=false,qc='',args=[],cur='';
+    while(i<expr.length){
+      const ch=expr[i];
+      if(!inStr&&(ch==='"'||ch==="'")){inStr=true;qc=ch;cur+=ch;}
+      else if(inStr&&ch===qc){inStr=false;cur+=ch;}
+      else if(!inStr&&ch==='('){depth++;cur+=ch;}
+      else if(!inStr&&ch===')'){if(depth===0){if(cur.trim())args.push(cur.trim());return{args,end:i};}depth--;cur+=ch;}
+      else if(!inStr&&ch===','&&depth===0){args.push(cur.trim());cur='';}
+      else{cur+=ch;}
+      i++;
+    }
+    return null;
+  },
+  transpile(expr) {
+    const fns=['ends-with','lower-case','upper-case','matches','avg'];
+    let out='',i=0;
+    outer: while(i<expr.length){
+      for(const fn of fns){
+        if(expr.slice(i).startsWith(fn+'(')){
+          const parsed=this.parseFnArgs(expr,i+fn.length);
+          if(parsed){const a=parsed.args;const repl=this.rewrite(fn,a);if(repl!==null){out+=repl;i=parsed.end+1;continue outer;}}
+        }
+      }
+      out+=expr[i];i++;
+    }
+    return out;
+  },
+  rewrite(fn,args){
+    const a0=args[0]||'',a1=args[1]||'',a2=args[2]||'';
+    switch(fn){
+      case 'ends-with': return args.length<2?null:`substring(${a0},string-length(${a0})-string-length(${a1})+1)=${a1}`;
+      case 'lower-case': return `_lc_(${a0})`;
+      case 'upper-case': return `_uc_(${a0})`;
+      case 'matches': return `_matches_(${a0},${a1}${a2?','+a2:''})`;
+      case 'avg': return `(sum(${a0}) div count(${a0}))`;
+      default: return null;
+    }
+  },
+  splitArgs(s){const p=[];let cur='',inStr=false,qc='',d=0;for(const ch of s){if(!inStr&&(ch==='"'||ch==="'")){inStr=true;qc=ch;cur+=ch;}else if(inStr&&ch===qc){inStr=false;cur+=ch;}else if(!inStr&&ch==='('){d++;cur+=ch;}else if(!inStr&&ch===')'){d--;cur+=ch;}else if(!inStr&&ch===','&&d===0){p.push(cur);cur='';}else{cur+=ch;}}if(cur)p.push(cur);return p;},
+  extractMatches(expr){
+    const calls=[];
+    const cleaned=expr.replace(/_matches_\(([^)]*)\)/g,(_,inner)=>{
+      const parts=this.splitArgs(inner);
+      const nodeExpr=(parts[0]||'').trim();
+      const pat=(parts[1]||"''").trim().replace(/^['"]|['"]$/g,'');
+      const flags=(parts[2]||"''").trim().replace(/^['"]|['"]$/g,'');
+      calls.push({nodeExpr,pattern:pat,flags});return'true()';
+    });
+    return{calls,cleaned};
+  },
+  resolveNodeExpr(node,expr){
+    expr=expr.trim();
+    if(expr==='.'||expr==='text()'||expr==='string(.)'||expr==='normalize-space()')return(node.textContent||'').trim();
+    if(expr.startsWith('@'))return(node.getAttribute(expr.slice(1))||'');
+    const child=node.querySelector(expr.replace(/^[./]+/,''));
+    return child?(child.textContent||'').trim():(node.textContent||'').trim();
+  },
+  applyJsFilter(nodes,calls){return nodes.filter(node=>calls.every(call=>{const val=this.resolveNodeExpr(node,call.nodeExpr);try{const re=new RegExp(call.pattern,call.flags.replace(/[^gimsuy]/g,''));return re.test(val);}catch(e){return false;}}));},
+  evaluate(xp,doc){
+    // Try native first
+    try{const res=doc.evaluate(xp,doc,null,XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,null);return{nodes:snap(res),engine:'XPath 1.0',transpiled:null,error:null};}catch(_){}
+    // Transpile
+    let transpiled=this.transpile(xp);
+    const mInfo=this.extractMatches(transpiled);
+    transpiled=mInfo.cleaned;
+    try{
+      const res=doc.evaluate(transpiled,doc,null,XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,null);
+      let nodes=snap(res);
+      if(mInfo.calls.length>0)nodes=this.applyJsFilter(nodes,mInfo.calls);
+      return{nodes,engine:'XPath 2.0 (polyfill)',transpiled:transpiled!==xp?transpiled:null,error:null};
+    }catch(e2){return{nodes:null,engine:null,transpiled:null,error:e2.message};}
+  }
+};
+function snap(r){const a=[];for(let i=0;i<r.snapshotLength;i++)a.push(r.snapshotItem(i));return a;}
+
+// ═══════════════════════════════════════════════════
+// XML FORMATTER
+// ═══════════════════════════════════════════════════
+function prettyXML(xml){
+  const tokens=[];let pos=0;
+  while(pos<xml.length){
+    if(xml[pos]==='<'){
+      let end=pos+1;
+      if(xml.startsWith('<!--',pos)){const c=xml.indexOf('-->',pos+4);end=c===-1?xml.length:c+3;}
+      else if(xml.startsWith('<![CDATA[',pos)){const c=xml.indexOf(']]>',pos+9);end=c===-1?xml.length:c+3;}
+      else{let inQ=false,qc='';while(end<xml.length){const ch=xml[end];if(!inQ&&(ch==='"'||ch==="'")){inQ=true;qc=ch;}else if(inQ&&ch===qc){inQ=false;}else if(!inQ&&ch==='>'){end++;break;}end++;}}
+      tokens.push({t:'tag',v:xml.slice(pos,end)});pos=end;
+    }else{
+      const e2=xml.indexOf('<',pos);const chunk=xml.slice(pos,e2===-1?xml.length:e2).trim();
+      if(chunk)tokens.push({t:'text',v:chunk});pos=e2===-1?xml.length:e2;
+    }
+  }
+  const TAB='  ';let out='',depth=0;
+  for(let i=0;i<tokens.length;i++){
+    const tok=tokens[i],v=tok.v;
+    if(tok.t==='text'){out+=v;continue;}
+    if(v.startsWith('</')){depth=Math.max(0,depth-1);out+=(out.slice(-1)==='>') ?'\n'+TAB.repeat(depth)+v:v;}
+    else if(v.startsWith('<?')||v.startsWith('<!--')||v.startsWith('<!')){out+=(out?'\n':'')+TAB.repeat(depth)+v;}
+    else if(v.endsWith('/>')){out+='\n'+TAB.repeat(depth)+v;}
+    else{const n1=tokens[i+1],n2=tokens[i+2];if(n1&&n1.t==='text'&&n2&&n2.t==='tag'&&n2.v.startsWith('</')){out+='\n'+TAB.repeat(depth)+v+n1.v+n2.v;i+=2;}else{out+='\n'+TAB.repeat(depth)+v;depth++;}}
+  }
+  return out.trim();
+}
+
+// ═══════════════════════════════════════════════════
+// XML PARSE / CHANGE
+// ═══════════════════════════════════════════════════
+let parsedDoc=null,selectedNode=null,currentView='raw',matchedNodes=new Set(),srcBarOpen=false;
+
+function parseXML(str){const doc=new DOMParser().parseFromString(str.trim(),'text/xml');const err=doc.querySelector('parsererror');if(err)throw new Error(err.textContent.replace(/\s+/g,' ').trim().slice(0,120));return doc;}
+function onXMLChange(raw){
+  if(!raw||!raw.trim()){parsedDoc=null;setStatus('','Paste XML to begin');clearAutoXPath();clearEvalResult();if(currentView==='tree')document.getElementById('tree-view').innerHTML='<div style="padding:18px;color:var(--text3);font-size:12.5px;">Paste valid XML to see the tree.</div>';return;}
+  try{parsedDoc=parseXML(raw);const n=countEls(parsedDoc.documentElement);setStatus('ok',`Valid XML · ${n} element${n!==1?'s':''}`);if(currentView==='tree')renderTree();}
+  catch(e){parsedDoc=null;setStatus('err','Invalid XML — '+e.message.slice(0,70));if(currentView==='tree')document.getElementById('tree-view').innerHTML=`<div style="padding:14px;color:var(--error);font-size:12px;font-family:'JetBrains Mono',monospace;line-height:1.6;">Parse error:<br>${esc(e.message)}</div>`;}
+}
+function doFormat(){const ta=document.getElementById('xml-raw');if(!ta.value.trim()){showToast('Nothing to format');return;}try{parseXML(ta.value);const fmt=prettyXML(ta.value);ta.value=fmt;document.getElementById('tree-source-ta').value=fmt;onXMLChange(fmt);showToast('✓ XML formatted');}catch(e){showToast('⚠ Invalid XML — cannot format');}}
+function clearXML(){document.getElementById('xml-raw').value='';document.getElementById('tree-source-ta').value='';document.getElementById('tree-view').innerHTML='';parsedDoc=null;selectedNode=null;matchedNodes.clear();setStatus('','Paste XML to begin');clearEvalResult();clearAutoXPath();}
+function setStatus(type,msg){document.getElementById('xml-status-text').textContent=msg;document.getElementById('xml-status-dot').className='status-dot'+(type?' '+type:'');}
+function countEls(n){let c=1;for(const ch of n.children)c+=countEls(ch);return c;}
+
+// ═══════════════════════════════════════════════════
+// VIEW SWITCH / SOURCE BAR
+// ═══════════════════════════════════════════════════
+function switchView(v){currentView=v;document.getElementById('btn-raw').classList.toggle('active',v==='raw');document.getElementById('btn-tree').classList.toggle('active',v==='tree');const raw=document.getElementById('xml-raw'),tree=document.getElementById('tree-container');if(v==='raw'){raw.style.display='';tree.classList.remove('active');}else{raw.style.display='none';tree.classList.add('active');document.getElementById('tree-source-ta').value=raw.value;if(!parsedDoc){document.getElementById('tree-view').innerHTML='<div style="padding:18px;color:var(--text3);font-size:12.5px;">Paste valid XML to see the tree.</div>';return;}renderTree();}}
+function toggleSrcBar(){srcBarOpen=!srcBarOpen;document.getElementById('tree-source-ta').classList.toggle('open',srcBarOpen);document.getElementById('src-arrow').textContent=srcBarOpen?'▼':'▲';if(srcBarOpen)document.getElementById('tree-source-ta').focus();}
+function syncSrcBar(val){document.getElementById('xml-raw').value=val;onXMLChange(val);}
+function applySrcBar(){const val=document.getElementById('tree-source-ta').value;document.getElementById('xml-raw').value=val;onXMLChange(val);showToast('✓ XML applied');}
+
+// ═══════════════════════════════════════════════════
+// TREE RENDER
+// ═══════════════════════════════════════════════════
+function renderTree(){const tv=document.getElementById('tree-view');tv.innerHTML='';if(!parsedDoc)return;tv.appendChild(buildNode(parsedDoc.documentElement,0));applyHighlights();}
+function buildNode(node,depth){
+  const wrap=document.createElement('div');wrap.className='tree-node';
+  if(node.nodeType!==Node.ELEMENT_NODE)return wrap;
+  const childEls=Array.from(node.children),hasKids=childEls.length>0;
+  const directText=Array.from(node.childNodes).filter(c=>c.nodeType===Node.TEXT_NODE&&c.textContent.trim()).map(c=>c.textContent.trim()).join('');
+  const line=document.createElement('div');line.className='tree-node-line';node._tl=line;
+  for(let i=0;i<depth;i++){const s=document.createElement('span');s.className='tree-indent';line.appendChild(s);}
+  const tog=document.createElement('span');tog.className='tree-toggle'+(hasKids?' open':' leaf');tog.textContent='▶';line.appendChild(tog);
+  const span=document.createElement('span');
+  let h=`<span class="tb">&lt;</span><span class="tn">${esc(node.tagName)}</span>`;
+  for(const a of node.attributes)h+=` <span class="an">${esc(a.name)}</span>=<span class="av">"${esc(a.value)}"</span>`;
+  if(!hasKids){if(directText)h+=`<span class="tb">&gt;</span><span class="tx">${esc(directText.length>60?directText.slice(0,60)+'…':directText)}</span><span class="tb">&lt;/${esc(node.tagName)}&gt;</span>`;else h+=`<span class="tb"> /&gt;</span>`;}else h+=`<span class="tb">&gt;</span>`;
+  span.innerHTML=h;line.appendChild(span);
+  const kids=document.createElement('div');kids.className='children';
+  if(hasKids){for(const ch of childEls)kids.appendChild(buildNode(ch,depth+1));const cl=document.createElement('div');cl.className='tree-node-line';cl.style.cursor='default';for(let i=0;i<depth;i++){const s=document.createElement('span');s.className='tree-indent';cl.appendChild(s);}const si=document.createElement('span');si.className='tree-indent';cl.appendChild(si);const cs=document.createElement('span');cs.innerHTML=`<span class="tb">&lt;/${esc(node.tagName)}&gt;</span>`;cl.appendChild(cs);kids.appendChild(cl);}
+  line.addEventListener('click',e=>{e.stopPropagation();selectNode(node,line);if(hasKids){kids.classList.toggle('collapsed');tog.classList.toggle('open');}});
+  wrap.appendChild(line);wrap.appendChild(kids);return wrap;
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ═══════════════════════════════════════════════════
+// NODE SELECT + XPATH GENERATION
+// ═══════════════════════════════════════════════════
+function selectNode(node,line){if(selectedNode&&selectedNode._tl)selectedNode._tl.classList.remove('selected');selectedNode=node;line.classList.add('selected');setXPBox('relative-xpath',relXPath(node));setXPBox('absolute-xpath',absXPath(node));}
+function setXPBox(id,val){const el=document.getElementById(id);el.textContent=val;el.contentEditable='false';}
+function absXPath(node){const parts=[];let n=node;while(n&&n.nodeType===Node.ELEMENT_NODE){const tag=n.tagName;let idx=1,total=0,sib=n.previousSibling;while(sib){if(sib.nodeType===Node.ELEMENT_NODE&&sib.tagName===tag)idx++;sib=sib.previousSibling;}let c=n.parentNode?n.parentNode.firstChild:null;while(c){if(c.nodeType===Node.ELEMENT_NODE&&c.tagName===tag)total++;c=c.nextSibling;}parts.unshift(total>1?`${tag}[${idx}]`:tag);n=n.parentNode;}return'/'+parts.join('/');}
+function relXPath(node){const tag=node.tagName;if(node.getAttribute('id'))return`//${tag}[@id="${node.getAttribute('id')}"]`;for(const a of node.attributes)if(['name','data-testid','aria-label'].includes(a.name)&&a.value.trim())return`//${tag}[@${a.name}="${a.value.trim()}"]`;const txt=Array.from(node.childNodes).filter(c=>c.nodeType===Node.TEXT_NODE&&c.textContent.trim()).map(c=>c.textContent.trim()).join('');if(txt&&txt.length<50)return`//${tag}[text()="${txt}"]`;return ctxXPath(node);}
+function ctxXPath(node){const parts=[];let n=node,d=0;while(n&&n.nodeType===Node.ELEMENT_NODE&&d<5){const tag=n.tagName;let part=tag;const id=n.getAttribute('id');if(id){parts.unshift(`${tag}[@id="${id}"]`);break;}const nm=n.getAttribute('name')||n.getAttribute('data-testid');if(nm){parts.unshift(`${tag}[@name="${nm}"]`);break;}let idx=1,total=0,sib=n.previousSibling;while(sib){if(sib.nodeType===Node.ELEMENT_NODE&&sib.tagName===tag)idx++;sib=sib.previousSibling;}let c=n.parentNode?n.parentNode.firstChild:null;while(c){if(c.nodeType===Node.ELEMENT_NODE&&c.tagName===tag)total++;c=c.nextSibling;}if(total>1)part+=`[${idx}]`;parts.unshift(part);n=n.parentNode;d++;}return'//'+parts.join('/');}
+
+// ═══════════════════════════════════════════════════
+// EVALUATE
+// ═══════════════════════════════════════════════════
+function evaluateXPath(){
+  const xp=document.getElementById('xpath-input').value.trim();
+  const input=document.getElementById('xpath-input');
+  const list=document.getElementById('result-list');
+  hideAc();
+  if(!xp){showToast('Enter an XPath expression');return;}
+  if(!parsedDoc){showToast('Paste valid XML first');return;}
+  matchedNodes.clear();list.innerHTML='';hideFeedback();input.className='';
+
+  const{nodes,engine,transpiled,error}=XP2.evaluate(xp,parsedDoc);
+
+  if(error){
+    input.className='xpath-err';
+    const diag=diagnoseXPathError(xp,error);
+    showError(diag);
+    return;
+  }
+
+  input.className='xpath-ok';
+  if(!nodes||nodes.length===0){
+    showFeedback('warn','No matching nodes found for this expression.');
+  } else {
+    const cnt=nodes.length;
+    showFeedback('success', cnt);
+    nodes.forEach((node,i)=>{
+      matchedNodes.add(node);
+      renderResultItem(node,i,list,engine,transpiled&&i===0?transpiled:null);
+    });
+  }
+  if(currentView==='tree')applyHighlights();
+}
+
+function showFeedback(type, payload) {
+  const wrap = document.getElementById('feedback-wrap');
+  const inner = document.getElementById('feedback-inner');
+  wrap.classList.add('show');
+  if (type === 'success') {
+    const cnt = payload;
+    inner.innerHTML = `<div class="feedback-match success">
+      ${svgOk()} Matched <span class="match-badge">${cnt}</span> node${cnt!==1?'s':''}
+    </div>`;
+  } else {
+    inner.innerHTML = `<div class="feedback-match warn">
+      ${svgW()} ${esc(payload)}
+    </div>`;
+  }
+}
+
+function showError(diag) {
+  const wrap = document.getElementById('feedback-wrap');
+  const inner = document.getElementById('feedback-inner');
+  wrap.classList.add('show');
+  const fixesHtml = diag.fixes.map(f => {
+    // If fix contains something that looks like code, wrap it
+    const fEsc = esc(f);
+    const coded = fEsc.replace(/`([^`]+)`/g,'<code class="feedback-fix-code">$1</code>');
+    return `<div style="margin-bottom:3px">• ${coded}</div>`;
+  }).join('');
+  inner.innerHTML = `<div class="feedback-error">
+    <div class="feedback-error-header">
+      <div class="feedback-error-icon">${svgErr()}</div>
+      <div>
+        <div class="feedback-error-title">${esc(diag.title)}</div>
+        <div class="feedback-error-msg">${esc(diag.detail)}</div>
+      </div>
+    </div>
+    <div class="feedback-fix">
+      <div class="feedback-fix-icon">${svgFix()}</div>
+      <div>
+        <div class="feedback-fix-label">How to fix</div>
+        <div class="feedback-fix-text">${fixesHtml}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function hideFeedback(){
+  document.getElementById('feedback-wrap').classList.remove('show');
+  document.getElementById('feedback-inner').innerHTML='';
+}
+
+function renderResultItem(node,idx,container,engine,transpiled){
+  const item=document.createElement('div');item.className='result-item';
+  const hdr=document.createElement('div');hdr.className='result-item-hdr';
+  hdr.innerHTML=`Match ${idx+1} &nbsp;·&nbsp; <code style="font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--brand-muted);padding:1px 5px;border-radius:3px;">${esc(node.nodeName||'#text')}</code>`;
+  item.appendChild(hdr);
+  if(idx===0&&(engine||transpiled)){const note=document.createElement('div');note.className='engine-note';note.innerHTML=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>&nbsp;Engine: <code>${esc(engine)}</code>${transpiled?` &nbsp;·&nbsp; transpiled: <code style="color:var(--brand-dark)">${esc(transpiled.slice(0,80)+(transpiled.length>80?'…':''))}</code>`:''}`; item.appendChild(note);}
+  const body=document.createElement('div');body.className='result-item-body';
+  if(node.nodeType===Node.ELEMENT_NODE){let xml=prettyXML(new XMLSerializer().serializeToString(node));if(xml.length>500)xml=xml.slice(0,500)+'\n…';body.textContent=xml;}
+  else if(node.nodeType===Node.ATTRIBUTE_NODE){body.textContent=`${node.name}="${node.value}"`;}
+  else{body.textContent=node.nodeValue||node.textContent||'';}
+  item.appendChild(body);container.appendChild(item);
+}
+
+function applyHighlights(){document.querySelectorAll('.match-node').forEach(el=>el.classList.remove('match-node'));matchedNodes.forEach(n=>{if(n._tl)n._tl.closest('.tree-node').classList.add('match-node');});}
+
+function clearEvalResult(){
+  hideFeedback();
+  document.getElementById('result-list').innerHTML=`<div class="placeholder-msg"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#ca7702" stroke-width="1.2" opacity="0.35"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><p>Enter an XPath and press <strong>Evaluate</strong>.<br>Supports XPath 1.0 &amp; 2.0 functions:<br><code style="font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface2);padding:2px 6px;border-radius:3px;margin-top:4px;display:inline-block">ends-with · matches · avg · lower-case · upper-case</code></p></div>`;
+  document.getElementById('xpath-input').className='';
+  matchedNodes.clear();
+  document.querySelectorAll('.match-node').forEach(el=>el.classList.remove('match-node'));
+}
+function clearXPathFull(){document.getElementById('xpath-input').value='';clearEvalResult();hideAc();}
+function clearAutoXPath(){document.getElementById('relative-xpath').textContent='';document.getElementById('absolute-xpath').textContent='';}
+
+function svgOk() {return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>`;}
+function svgErr(){return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;}
+function svgW() {return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;}
+function svgFix(){return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`;}
+
+// ═══════════════════════════════════════════════════
+// COPY / EDIT / USE
+// ═══════════════════════════════════════════════════
+function copyXP(type){const txt=document.getElementById(type+'-xpath').textContent.trim();if(!txt){showToast('No XPath yet — click a node first');return;}navigator.clipboard.writeText(txt).then(()=>showToast('✓ Copied'));}
+function editXP(type){const el=document.getElementById(type+'-xpath');if(!el.textContent.trim()){showToast('No XPath to edit');return;}if(el.contentEditable==='true'){el.contentEditable='false';showToast('✓ Saved');}else{['relative-xpath','absolute-xpath'].forEach(id=>{document.getElementById(id).contentEditable='false';});el.contentEditable='true';el.focus();const r=document.createRange();r.selectNodeContents(el);r.collapse(false);const s=window.getSelection();s.removeAllRanges();s.addRange(r);showToast('Editing — click ✏ again to save');}}
+function useXP(type){const txt=document.getElementById(type+'-xpath').textContent.trim();if(!txt){showToast('No XPath yet — click a node first');return;}document.getElementById('xpath-input').value=txt;evaluateXPath();}
+
+let toastTmr;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTmr);toastTmr=setTimeout(()=>t.classList.remove('show'),2200);}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+const SAMPLE=`<?xml version="1.0" encoding="UTF-8"?>
+<bookstore>
+  <book category="fiction" id="b1">
+    <title lang="en">The Great Gatsby</title>
+    <author>F. Scott Fitzgerald</author>
+    <year>1925</year>
+    <price>12.99</price>
+  </book>
+  <book category="science" id="b2">
+    <title lang="en">A Brief History of Time</title>
+    <author>Stephen Hawking</author>
+    <year>1988</year>
+    <price>15.49</price>
+  </book>
+  <book category="fiction" id="b3">
+    <title lang="en">1984</title>
+    <author>George Orwell</author>
+    <year>1949</year>
+    <price>9.99</price>
+  </book>
+</bookstore>`;
+document.getElementById('xml-raw').value=SAMPLE;
+document.getElementById('tree-source-ta').value=SAMPLE;
+onXMLChange(SAMPLE);
+</script>
+</body>
+</html>
