@@ -25,12 +25,15 @@
 body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
 
 /* ── Header ── */
-header { background:var(--surface); border-bottom:2px solid var(--brand); padding:0 20px; height:52px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; box-shadow:0 2px 8px rgba(202,119,2,0.08); }
-.logo { display:flex; align-items:center; gap:10px; font-size:16px; font-weight:700; color:var(--brand-dark); }
-.logo-icon { width:30px; height:30px; background:var(--brand); border-radius:7px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:800; font-family:'JetBrains Mono',monospace; }
+header { background:var(--surface); border-bottom:3px solid var(--brand); padding:0 28px; height:72px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; box-shadow:0 3px 14px rgba(202,119,2,0.12); }
+.logo { display:flex; align-items:center; gap:14px; }
+.logo-icon { width:44px; height:44px; background:var(--brand); border-radius:11px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:20px; font-weight:900; font-family:'JetBrains Mono',monospace; box-shadow:0 2px 8px rgba(202,119,2,0.35); letter-spacing:-1px; }
+.logo-text { display:flex; flex-direction:column; gap:1px; }
+.logo-title { font-size:22px; font-weight:800; color:var(--brand-dark); letter-spacing:-0.5px; line-height:1; }
+.logo-sub { font-size:11px; font-weight:500; color:var(--text3); letter-spacing:0.2px; }
 .header-right { display:flex; align-items:center; gap:10px; }
-.engine-badge { font-size:10px; font-weight:700; letter-spacing:0.4px; padding:3px 9px; border-radius:20px; background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
-.header-badge { font-size:11px; font-weight:500; background:var(--brand-pale); color:var(--brand-dark); border:1px solid var(--brand-muted); padding:3px 10px; border-radius:20px; }
+.engine-badge { font-size:10px; font-weight:700; letter-spacing:0.4px; padding:4px 11px; border-radius:20px; background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
+.header-badge { font-size:11px; font-weight:600; background:var(--brand-pale); color:var(--brand-dark); border:1.5px solid var(--brand-muted); padding:4px 12px; border-radius:20px; }
 
 /* ── Layout ── */
 main { flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:0; overflow:hidden; }
@@ -199,8 +202,11 @@ main { flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:0; overfl
 
 <header>
   <div class="logo">
-    <div class="logo-icon">X</div>
-    XPath Editor
+    <div class="logo-icon">XP</div>
+    <div class="logo-text">
+      <span class="logo-title">XPath Editor for XML</span>
+      <span class="logo-sub">Smart XPath 1.0 &amp; 2.0 Evaluator</span>
+    </div>
   </div>
   <div class="header-right">
     <span class="engine-badge">XPath 2.0 ✓</span>
@@ -229,7 +235,7 @@ main { flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:0; overfl
       </div>
     </div>
     <div class="xml-body">
-      <textarea id="xml-raw" placeholder="Paste your XML here…&#10;&#10;&lt;bookstore&gt;&#10;  &lt;book id=&quot;b1&quot;&gt;&#10;    &lt;title&gt;The Great Gatsby&lt;/title&gt;&#10;  &lt;/book&gt;&#10;&lt;/bookstore&gt;" oninput="onXMLChange(this.value)"></textarea>
+      <textarea id="xml-raw" placeholder="Paste your XML here…&#10;&#10;Example:&#10;&lt;bookstore&gt;&#10;  &lt;book category=&quot;fiction&quot; id=&quot;b1&quot;&gt;&#10;    &lt;title&gt;The Great Gatsby&lt;/title&gt;&#10;    &lt;author&gt;F. Scott Fitzgerald&lt;/author&gt;&#10;    &lt;price&gt;12.99&lt;/price&gt;&#10;  &lt;/book&gt;&#10;  &lt;book category=&quot;science&quot; id=&quot;b2&quot;&gt;&#10;    &lt;title&gt;A Brief History of Time&lt;/title&gt;&#10;    &lt;author&gt;Stephen Hawking&lt;/author&gt;&#10;    &lt;price&gt;15.49&lt;/price&gt;&#10;  &lt;/book&gt;&#10;&lt;/bookstore&gt;" oninput="onXMLChange(this.value)"></textarea>
       <div id="tree-container">
         <div id="tree-view"></div>
         <div class="tree-source-bar">
@@ -893,9 +899,7 @@ const SAMPLE=`<?xml version="1.0" encoding="UTF-8"?>
     <price>9.99</price>
   </book>
 </bookstore>`;
-document.getElementById('xml-raw').value=SAMPLE;
-document.getElementById('tree-source-ta').value=SAMPLE;
-onXMLChange(SAMPLE);
+document.getElementById('tree-source-ta').value='';
 </script>
 </body>
 </html>
