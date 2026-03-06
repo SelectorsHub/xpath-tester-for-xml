@@ -399,7 +399,7 @@ main { flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:0; overfl
     <!-- Input + autocomplete + feedback -->
     <div class="xpath-input-section" id="xpath-input-section">
       <div class="xpath-input-row">
-        <button class="btn btn-icon xpath-copy-left" id="xp-copy-btn" data-tip="Copy XPath" onclick="copyXPathInput()" tabindex="-1">
+        <button class="btn btn-icon xpath-copy-left" id="xp-copy-btn" data-tip="Copy XPath" onclick="copyXPathInput(event)" tabindex="-1" onmousedown="event.preventDefault()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>
         <div class="xpath-ta-wrap">
@@ -488,11 +488,17 @@ function execCopy(text, onSuccess) {
   try {
     const ta = document.createElement('textarea');
     ta.value = text;
-    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+    ta.setAttribute('readonly', '');
     document.body.appendChild(ta);
-    ta.focus(); ta.select();
+    // Save scroll position so focus() doesn't jump the page
+    const sx = window.scrollX, sy = window.scrollY;
+    ta.focus({ preventScroll: true });
+    ta.select();
     document.execCommand('copy');
     document.body.removeChild(ta);
+    // Restore in case browser ignored preventScroll
+    window.scrollTo(sx, sy);
     if (onSuccess) onSuccess();
   } catch(e) { showToast('⚠ Copy not available'); }
 }
@@ -507,7 +513,8 @@ function autoGrowXpTa(ta) {
 }
 
 // ── Copy the XPath textarea value ──
-function copyXPathInput() {
+function copyXPathInput(e) {
+  if (e) e.preventDefault();
   const val = document.getElementById('xpath-input').value.trim();
   if (!val) return;
   const btn = document.getElementById('xp-copy-btn');
