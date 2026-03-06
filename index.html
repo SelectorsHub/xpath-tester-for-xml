@@ -278,6 +278,13 @@ main { flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:0; overfl
 .xpath-gen-row > [data-tip]:last-child::before {
   left:auto; right:8px; transform:none;
 }
+/* Left-edge tooltip: copy/edit buttons are first in row, anchor to left */
+.xpath-gen-btns [data-tip]::after {
+  left:0; transform:none;
+}
+.xpath-gen-btns [data-tip]::before {
+  left:8px; transform:none;
+}
 
 /* ── Auto XPath ── */
 .auto-xpath-section { background:var(--brand-pale); border-bottom:1.5px solid var(--brand-muted); border-top:1.5px solid var(--border); padding:8px 8px 9px; flex-shrink:0; }
@@ -646,7 +653,7 @@ function handleXPathKey(e) {
     renderAc(); scrollAcActive(); e.preventDefault();
   } else if (e.key === 'Tab' || e.key === 'Enter') {
     if (open && acIdx >= 0) { applyAc(acIdx); e.preventDefault(); return; }
-    if (e.key === 'Enter') evaluateXPath();
+    if (e.key === 'Enter') { e.preventDefault(); evaluateXPath(); }
     hideAc();
   } else if (e.key === 'Escape') {
     hideAc();
