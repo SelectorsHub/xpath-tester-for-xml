@@ -156,7 +156,7 @@ main { flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:0; overfl
 .xpath-ta-wrap { flex:1; position:relative; display:flex; align-items:flex-start; }
 #xpath-input {
   width:100%; font-family:'JetBrains Mono',monospace; font-size:13px;
-  padding:8px 58px 8px 11px;   /* right room for the 2 inline icons */
+  padding:8px 34px 8px 11px;   /* right room for clear icon only */
   border:1.5px solid var(--border2);
   border-radius:var(--radius-sm); background:var(--surface2); color:var(--text);
   outline:none; transition:border-color 0.15s, background 0.15s;
@@ -167,9 +167,9 @@ main { flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:0; overfl
 #xpath-input.xpath-ok   { border-color:var(--success) !important; background:var(--success-bg); }
 #xpath-input.xpath-err  { border-color:var(--error)   !important; background:var(--error-bg); }
 
-/* Inline icons sitting inside the textarea on the right */
+/* Inline clear icon inside the textarea on the right */
 .xpath-ta-actions {
-  position:absolute; top:6px; right:5px;
+  position:absolute; top:50%; right:6px; transform:translateY(-50%);
   display:flex; flex-direction:column; gap:3px;
 }
 .xpath-ta-btn {
@@ -179,6 +179,15 @@ main { flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:0; overfl
 }
 .xpath-ta-btn:hover { background:var(--brand-muted); color:var(--brand-dark); }
 .xpath-ta-btn.hidden { display:none; }
+
+/* Copy button sitting outside textarea on the left — always visible, stable */
+.xpath-copy-left {
+  flex-shrink:0; align-self:flex-start; margin-top:1px;
+}
+
+/* Copy button on left of textarea — tooltip anchors left so it doesn't clip */
+.xpath-copy-left[data-tip]::after { left:0; transform:none; }
+.xpath-copy-left[data-tip]::before { left:8px; transform:none; }
 
 /* Buttons on the right side of the textarea row */
 .xpath-row-btns { display:flex; flex-direction:column; gap:5px; flex-shrink:0; }
@@ -390,6 +399,9 @@ main { flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:0; overfl
     <!-- Input + autocomplete + feedback -->
     <div class="xpath-input-section" id="xpath-input-section">
       <div class="xpath-input-row">
+        <button class="btn btn-icon xpath-copy-left" id="xp-copy-btn" data-tip="Copy XPath" onclick="copyXPathInput()" tabindex="-1">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
         <div class="xpath-ta-wrap">
           <textarea id="xpath-input" autocomplete="off" spellcheck="false" rows="1"
             placeholder="Type XPath… e.g. //book[ends-with(title,'9')]"
@@ -397,13 +409,9 @@ main { flex:1; display:grid; grid-template-columns:1fr 1fr; min-height:0; overfl
             onkeydown="handleXPathKey(event)"
             onfocus="showAcIfNeeded()"
             onblur="scheduleHideAc()"></textarea>
-          <!-- Inline clear + copy icons inside the textarea -->
           <div class="xpath-ta-actions">
             <button class="xpath-ta-btn hidden" id="xp-clear-btn" data-tip="Clear" onclick="clearXPathFull()" tabindex="-1">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-            <button class="xpath-ta-btn hidden" id="xp-copy-btn" data-tip="Copy XPath" onclick="copyXPathInput()" tabindex="-1">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             </button>
           </div>
         </div>
@@ -493,10 +501,9 @@ function execCopy(text, onSuccess) {
 function autoGrowXpTa(ta) {
   ta.style.height = 'auto';
   ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
-  // Show/hide inline icons based on content
+  // Only the clear button toggles — copy is always visible
   const hasVal = ta.value.trim().length > 0;
   document.getElementById('xp-clear-btn').classList.toggle('hidden', !hasVal);
-  document.getElementById('xp-copy-btn').classList.toggle('hidden', !hasVal);
 }
 
 // ── Copy the XPath textarea value ──
@@ -1051,7 +1058,6 @@ function clearXPathFull(){
   const ta = document.getElementById('xpath-input');
   ta.value = ''; ta.style.height = 'auto';
   document.getElementById('xp-clear-btn').classList.add('hidden');
-  document.getElementById('xp-copy-btn').classList.add('hidden');
   clearEvalResult(); hideAc();
 }
 function clearAutoXPath(){document.getElementById('relative-xpath').textContent='';document.getElementById('absolute-xpath').textContent='';}
